@@ -15,6 +15,4 @@ It has a Blazor UI and a REST API for the processing of the uploaded books.
 
 The API was architected with a simple CQRS pattern. This increases development time, but it provides a very maintainable code base for future extensibility and bug fixes.
 
-Check out the OpenAPI by using <a href="https://localhost:44329/swagger" target="_blank">Swagger</a>
-
 All the processing functionality is implemented through a Service based approach. This service is accessed by the controller through dependency injection
