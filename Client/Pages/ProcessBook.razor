@@ -1,0 +1,161 @@
+﻿@page "/processbook"
+@inject HttpClient Http
+@using System.IO
+@using WordSmithWeb.Shared
+@using System.Collections
+
+<PageTitle>Process Book</PageTitle>
+
+<form >
+    <h3>Select Book</h3>
+    <InputFile OnChange="OnBookFileChange" multiple />
+</form>
+<br />
+<form @onsubmit="OnIgnoreWordsSubmit">
+    <h3>Select Stop Words</h3>
+    <InputFile OnChange="OnIgnoreWordsFileChange" multiple />
+    <br /><br />
+    <h3>Number of Results desired</h3>
+    <input type="text" @bind="@inputValue" @oninput="OnInputEvent" />
+    <br /><br />
+    <button type="submit">Process Book</button>
+</form>
+
+<div class="container">
+    <h3 class="p-3 text-center">Word Count for Book</h3>
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Word</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var word in _wordResults)
+            {
+                <tr>
+                    <td>@word.word</td>
+                    <td>@word.count</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    string Message = "No file(s) selected";
+    IReadOnlyList<IBrowserFile> selectedBookFile;
+    IReadOnlyList<IBrowserFile> selectedIgnoreWordsFile;
+    Boolean _bookUploaded = false;
+    Boolean _ignoreWordsUploaded = false;
+    List<WordResult> _wordResults = new List<WordResult>();
+
+    //Set the default number of results
+    private string inputValue = "100";
+
+    private void OnBookFileChange(InputFileChangeEventArgs e)
+    {
+        selectedBookFile = e.GetMultipleFiles();
+        Message = $"{selectedIgnoreWordsFile.Count} file(s) selected";
+        _bookUploaded = true;
+        this.StateHasChanged();
+    }
+
+    private void OnIgnoreWordsFileChange(InputFileChangeEventArgs e)
+    {
+        selectedIgnoreWordsFile = e.GetMultipleFiles();
+        Message = $"{selectedBookFile.Count} file(s) selected";
+        _ignoreWordsUploaded = true;
+        this.StateHasChanged();
+    }
+
+    private async void OnBookSubmit()
+    {
+        try
+        {
+            foreach (var file in selectedBookFile)
+            {
+                Stream stream = file.OpenReadStream(1500000);
+
+                MemoryStream ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                stream.Close();
+
+                UploadedBookRequest uploadedBookFile = new UploadedBookRequest();
+                uploadedBookFile.BookFileName = file.Name;
+                uploadedBookFile.BookContent = ms.ToArray();
+
+                ms.Close();
+
+                await Http.PostAsJsonAsync<UploadedBookRequest>("/api/wordsmith/Words/Count", uploadedBookFile);
+            }
+            Message = $"{selectedBookFile.Count} file(s) uploaded on server";
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            string SomeString = "";
+        }
+    }
+
+    private async void OnIgnoreWordsSubmit()
+    {
+        try
+        {
+            UploadedBookRequest uploadedBookFile = new UploadedBookRequest();
+
+            foreach (var file in selectedBookFile)
+            {
+                Stream stream = file.OpenReadStream(1500000);
+
+                MemoryStream ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                stream.Close();
+
+                uploadedBookFile = new UploadedBookRequest();
+                uploadedBookFile.BookFileName = file.Name;
+                uploadedBookFile.BookContent = ms.ToArray();
+
+                ms.Close();
+            }
+
+            foreach (var file in selectedIgnoreWordsFile)
+            {
+                Stream stream = file.OpenReadStream(1500000);
+
+                MemoryStream ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                stream.Close();
+
+                uploadedBookFile.IgnoredWordsFileName = file.Name;
+                uploadedBookFile.IgnoreWordsContent = ms.ToArray();
+
+                ms.Close();
+            }
+
+            //Get the number of results from the page
+            uploadedBookFile.RequestedResults = Convert.ToInt32(inputValue);
+
+            //var response = Http.PostAsJsonAsync<UploadedBookRequest>("/api/wordsmith/Words/Count", uploadedBookFile);
+            var response = await Http.PostAsJsonAsync<UploadedBookRequest>("/api/wordsmith/Words/Count", uploadedBookFile);
+
+            var result = response.Content.ReadAsStringAsync().Result;
+
+            List<WordResult> words = System.Text.Json.JsonSerializer.Deserialize<List<WordResult>>(result);
+
+            _wordResults = words;
+
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            //string SomeString = "";
+        }
+    }
+
+    
+    private void OnInputEvent(ChangeEventArgs changeEvent)
+    {
+        inputValue = (string)changeEvent.Value;
+    }
+}

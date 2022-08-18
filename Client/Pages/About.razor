@@ -1,0 +1,46 @@
+﻿@page "/about"
+
+<PageTitle>About Word Smith</PageTitle>
+
+<h1>About</h1>
+
+This application was created for <a href="https://www.sourceallies.com/" target="_blank">Source Allies</a>. It is intended to show the thought process, problem solving and coding skills of Steven Simonton.
+<br />
+<br />
+It was created using Visual Studio 2022.
+<br />
+Project Type: Blazor WebAssembly App
+<br />
+<br />
+Additional Nuget Packages Include:
+<br />
+Serilog.AspNetCore(6.0.1) - For server-side logging
+<br />
+Swashbuckle.AspNetCore(6.4.0) - For the swagger UI
+<br />
+<br />
+It has a Blazor UI and a REST API for the processing of the uploaded books.
+<br />
+<br />
+The API was architected with a simple CQRS pattern. This increases development time, but it provides a very maintainable code
+<br />
+base for future extensibility and bug fixes.
+<br />
+<br />
+Check out the OpenAPI by using <a href="https://localhost:44329/swagger" target="_blank">Swagger</a>
+<br />
+<br />
+All the processing functionality is implemented through a Service based approach. This service is accessed by the
+<br />
+controller through dependency injection
+<br />
+<br />
+
+@code {
+    private int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}
